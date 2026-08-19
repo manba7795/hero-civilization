@@ -29,6 +29,8 @@ export interface CityState extends Axial {
   food: number;
   production: number;
   productionQueue: ProductionId[];
+  buildings?: string[];
+  workedTiles?: string[];
 }
 
 export interface UnitState extends Axial {
@@ -59,8 +61,10 @@ export interface GameState {
   cities: CityState[];
   units: UnitState[];
   capturedPokemon: string[];
+  legendaryPokemon: string[];
   artifactInventory: string[];
   researchedTechs: string[];
+  researchedCivics?: string[];
 }
 
 export interface YieldBundle {
