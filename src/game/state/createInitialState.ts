@@ -19,7 +19,7 @@ export function createInitialState(): GameState {
   normalizeStart(tiles, 18, 10);
 
   return {
-    version: 4,
+    version: 5,
     turn: 1,
     activePlayer: "player",
     nationId: "astral_republic",
@@ -31,13 +31,17 @@ export function createInitialState(): GameState {
     tiles,
     cities: [
       {
+        id: "city_player_capital", owner: "player", name: "星辉首都", q: 4, r: 5,
+        population: 1, hp: 120, food: 0, production: 0, productionQueue: ["warrior"]
+      },
+      {
         id: "city_ai_capital", owner: "ai", name: "暮铁城", q: 18, r: 10,
         population: 2, hp: 120, food: 0, production: 0, productionQueue: ["warrior"]
       }
     ],
     units: [
-      { id: "u_settler_1", owner: "player", type: "settler", q: 4, r: 5, hp: 100, movement: 2 },
-      { id: "u_warrior_1", owner: "player", type: "warrior", q: 5, r: 5, hp: 100, movement: 2 },
+      { id: "u_settler_1", owner: "player", type: "settler", q: 5, r: 5, hp: 100, movement: 2 },
+      { id: "u_warrior_1", owner: "player", type: "warrior", q: 5, r: 6, hp: 100, movement: 2 },
       { id: "u_ai_warrior_1", owner: "ai", type: "warrior", q: 17, r: 10, hp: 100, movement: 2 }
     ],
     capturedPokemon: [],
