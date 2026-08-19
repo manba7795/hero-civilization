@@ -1,0 +1,37 @@
+[
+  {
+    "id": "granary",
+    "name": "粮仓",
+    "cost": 60,
+    "effects": { "food": 2 },
+    "description": "储存粮食，促进城市成长。"
+  },
+  {
+    "id": "barracks",
+    "name": "兵营",
+    "cost": 80,
+    "effects": { "production": 2 },
+    "description": "训练军队，提高军事生产。"
+  },
+  {
+    "id": "library",
+    "name": "图书馆",
+    "cost": 100,
+    "effects": { "science": 3 },
+    "description": "积累知识，加速科技发展。"
+  },
+  {
+    "id": "workshop",
+    "name": "工坊",
+    "cost": 120,
+    "effects": { "production": 3 },
+    "description": "提升城市工业能力。"
+  },
+  {
+    "id": "spirit_lab",
+    "name": "精灵研究所",
+    "cost": 150,
+    "effects": { "science": 2, "culture": 2 },
+    "description": "研究国宝精灵力量。"
+  }
+]
