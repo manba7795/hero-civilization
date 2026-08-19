@@ -29,6 +29,9 @@ export interface CityState extends Axial {
   food: number;
   production: number;
   productionQueue: ProductionId[];
+  buildings?: string[];
+  workedTiles?: string[];
+  legendaryPokemonId?: string;
 }
 
 export interface UnitState extends Axial {
