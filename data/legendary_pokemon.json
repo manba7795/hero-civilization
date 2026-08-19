@@ -1,0 +1,24 @@
+[
+  {
+    "id": "ancient_guardian",
+    "name": "远古守护灵",
+    "type": "guardian",
+    "rarity": 10,
+    "cityBonus": {
+      "production": 2,
+      "defense": 15
+    },
+    "unique": true
+  },
+  {
+    "id": "sky_ancient_beast",
+    "name": "天穹古兽",
+    "type": "explorer",
+    "rarity": 10,
+    "cityBonus": {
+      "science": 3,
+      "vision": 4
+    },
+    "unique": true
+  }
+]
