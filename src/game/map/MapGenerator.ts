@@ -37,22 +37,18 @@ export function generateMap(width = 24, height = 16, seed = 48621): TileState[] 
         if (elevation !== "mountain" && moisture > 0.64) feature = "forest";
       }
 
-      const resourceRoll = noise(q * 3, r * 5, seed + 991);
-      const resource =
-        terrain !== "ocean" && elevation !== "mountain" && resourceRoll > 0.94
-          ? resourceRoll > 0.98 ? "iron" : "wheat"
-          : null;
+      const roll = noise(q * 3, r * 5, seed + 991);
+      let resource: string | null = null;
+      if (terrain !== "ocean" && elevation !== "mountain" && roll > 0.93) {
+        resource = roll > 0.985 ? "iron" : roll > 0.965 ? "horse" : "wheat";
+      }
+      if (roll > 0.997) resource = "crystal";
 
-      tiles.push({
-        q, r, terrain, elevation, feature, resource,
-        owner: null,
-        riverEdges: [false, false, false, false, false, false],
-        roadEdges: [false, false, false, false, false, false],
-        pokemonSpawnId: null,
-        pokemonHp: null,
-        pokemonMaxHp: null,
-        discovered: true
-      });
+      tiles.push({ q, r, terrain, elevation, feature, resource, owner: null,
+        riverEdges: [false,false,false,false,false,false],
+        roadEdges: [false,false,false,false,false,false],
+        pokemonSpawnId: null, pokemonHp: null, pokemonMaxHp: null,
+        discovered: true });
     }
   }
   return tiles;
