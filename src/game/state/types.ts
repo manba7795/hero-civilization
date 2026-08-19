@@ -4,7 +4,7 @@ export type TerrainId = "grass" | "plains" | "desert" | "coast" | "ocean";
 export type Elevation = "flat" | "hill" | "mountain";
 export type FeatureId = "forest" | "rainforest" | "marsh" | null;
 export type UnitType = "settler" | "warrior" | "hero";
-export type ProductionId = "warrior" | "settler";
+export type ProductionId = "warrior" | "settler" | "building:granary" | "building:barracks" | "building:library";
 
 export interface TileState extends Axial {
   terrain: TerrainId;
