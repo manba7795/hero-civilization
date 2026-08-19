@@ -19,7 +19,7 @@ export function createInitialState(): GameState {
   normalizeStart(tiles, 18, 10);
 
   return {
-    version: 4,
+    version: 5,
     turn: 1,
     activePlayer: "player",
     nationId: "astral_republic",
@@ -41,6 +41,7 @@ export function createInitialState(): GameState {
       { id: "u_ai_warrior_1", owner: "ai", type: "warrior", q: 17, r: 10, hp: 100, movement: 2 }
     ],
     capturedPokemon: [],
+    legendaryPokemon: [],
     artifactInventory: [],
     researchedTechs: []
   };
