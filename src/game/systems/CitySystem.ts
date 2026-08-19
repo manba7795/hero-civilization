@@ -3,7 +3,7 @@ import { HEX_DIRECTIONS, hexDistance } from "../map/Hex";
 import nations from "../../data/nations.json";
 import { BuildingSystem } from "./BuildingSystem";
 
-const PRODUCTION_COST: Record<ProductionId, number> = { warrior: 28, settler: 46 };
+const PRODUCTION_COST: Record<string, number> = { warrior: 28, settler: 46 };
 
 export class CitySystem {
   private buildingSystem: BuildingSystem;
@@ -47,7 +47,12 @@ export class CitySystem {
   }
 
   productionCost(item?: ProductionId): number {
-    return item ? PRODUCTION_COST[item] : 0;
+    if (!item) return 0;
+    if (item.startsWith("building:")) {
+      const id = item.replace("building:", "");
+      return ({ granary: 40, barracks: 50, library: 60 } as Record<string, number>)[id] ?? 0;
+    }
+    return PRODUCTION_COST[item] ?? 0;
   }
 
   build(city: CityState, buildingId: string): boolean {
@@ -88,46 +93,39 @@ export class CitySystem {
 
   processTurn(city: CityState): { completed?: ProductionId; grew?: boolean } {
     const y = this.getYield(city);
-    if (city.owner === "player") {
-      this.state.gold += y.gold;
-      this.state.science += y.science;
-      this.state.culture += y.culture;
-    }
-
     city.food += y.food;
     city.production += y.production;
-    const growthCost = 16 + city.population * 8;
-    let grew = false;
-    if (city.food >= growthCost) {
-      city.food -= growthCost;
-      city.population += 1;
-      grew = true;
-    }
 
     const current = city.productionQueue[0];
-    if (!current || city.production < PRODUCTION_COST[current]) return { grew };
-    const spawn = this.findSpawnTile(city);
-    if (!spawn) return { grew };
+    if (!current || city.production < this.productionCost(current)) return {};
 
-    city.production -= PRODUCTION_COST[current];
+    city.production -= this.productionCost(current);
+
+    if (current.startsWith("building:")) {
+      this.buildingSystem.build(city, current.replace("building:", ""));
+      return { completed: current };
+    }
+
+    const spawn = this.findSpawnTile(city);
+    if (!spawn) return { completed: current };
+
     const unit: UnitState = {
       id: `u_${current}_${crypto.randomUUID()}`,
       owner: city.owner,
-      type: current,
+      type: current as UnitState["type"],
       q: spawn.q,
       r: spawn.r,
       hp: 100,
       movement: 0
     };
     this.state.units.push(unit);
-    return { completed: current, grew };
+    return { completed: current };
   }
 
   private findSpawnTile(city: CityState) {
     const candidates = [{ q: city.q, r: city.r }, ...HEX_DIRECTIONS.map(d => ({ q: city.q + d.q, r: city.r + d.r }))];
     return candidates
       .map(p => this.state.tiles.find(t => t.q === p.q && t.r === p.r))
-      .find(t => t && t.terrain !== "ocean" && t.terrain !== "coast" && t.elevation !== "mountain" &&
-        !t.pokemonSpawnId && !this.state.units.some(u => u.hp > 0 && u.q === t.q && u.r === t.r));
+      .find(t => t && t.terrain !== "ocean" && t.terrain !== "coast" && t.elevation !== "mountain" && !this.state.units.some(u => u.q === t.q && u.r === t.r));
   }
 }
