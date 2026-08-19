@@ -1,0 +1,20 @@
+[
+  {
+    "id": "granary",
+    "name": "粮仓",
+    "cost": 40,
+    "yield": { "food": 2 }
+  },
+  {
+    "id": "barracks",
+    "name": "兵营",
+    "cost": 50,
+    "yield": { "production": 1 }
+  },
+  {
+    "id": "library",
+    "name": "图书馆",
+    "cost": 60,
+    "yield": { "science": 2 }
+  }
+]
