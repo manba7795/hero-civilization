@@ -1,0 +1,15 @@
+{
+  "version": "0.1",
+  "terrain": {
+    "grass": [],
+    "plains": [],
+    "desert": [],
+    "coast": [],
+    "mountain": [],
+    "forest": []
+  },
+  "heroes": {},
+  "pokemon": {},
+  "artifacts": {},
+  "ui": {}
+}

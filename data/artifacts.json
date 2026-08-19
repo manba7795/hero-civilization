@@ -1,0 +1,71 @@
+[
+  {
+    "id": "collector",
+    "name": "金币收集者",
+    "rarity": "artifact",
+    "description": "击杀敌军额外获得金币。",
+    "modifiers": {
+      "attack": 3,
+      "killGold": 20
+    }
+  },
+  {
+    "id": "snipers_focus",
+    "name": "狙击手的专注",
+    "rarity": "artifact",
+    "description": "提升攻击与技能射程。",
+    "modifiers": {
+      "attack": 7,
+      "skillRange": 1
+    }
+  },
+  {
+    "id": "trinity",
+    "name": "无尽之力",
+    "rarity": "artifact",
+    "description": "提升攻击、生命与移动。",
+    "modifiers": {
+      "attack": 5,
+      "hp": 25,
+      "movement": 1
+    }
+  },
+  {
+    "id": "lich_bane",
+    "name": "巫妖之祸",
+    "rarity": "artifact",
+    "description": "技能后强化下一次攻击。",
+    "modifiers": {
+      "attack": 2,
+      "empoweredAttack": 16
+    }
+  },
+  {
+    "id": "moguls_mail",
+    "name": "大亨之铠",
+    "rarity": "artifact",
+    "description": "大幅提高生命值。",
+    "modifiers": {
+      "hp": 45
+    }
+  },
+  {
+    "id": "tricksters_glass",
+    "name": "诡术师之镜",
+    "rarity": "artifact",
+    "description": "首次致命伤时保留生命。",
+    "modifiers": {
+      "hp": 10,
+      "surviveLethal": true
+    }
+  },
+  {
+    "id": "deathfire",
+    "name": "冥火之拥",
+    "rarity": "artifact",
+    "description": "提高技能伤害。",
+    "modifiers": {
+      "skillPower": 16
+    }
+  }
+]

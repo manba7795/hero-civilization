@@ -1,0 +1,138 @@
+[
+  {
+    "id": "pikachu",
+    "name": "皮卡丘",
+    "rarity": 1,
+    "habitats": [
+      "grass",
+      "plains"
+    ],
+    "partnerBonus": "移动 +1",
+    "hp": 58,
+    "attack": 13,
+    "modifiers": {
+      "movement": 1
+    }
+  },
+  {
+    "id": "eevee",
+    "name": "伊布",
+    "rarity": 1,
+    "habitats": [
+      "grass",
+      "forest"
+    ],
+    "partnerBonus": "生命 +15",
+    "hp": 64,
+    "attack": 11,
+    "modifiers": {
+      "hp": 15
+    }
+  },
+  {
+    "id": "charmander",
+    "name": "小火龙",
+    "rarity": 2,
+    "habitats": [
+      "desert",
+      "hill"
+    ],
+    "partnerBonus": "攻击 +3",
+    "hp": 68,
+    "attack": 16,
+    "modifiers": {
+      "attack": 3
+    }
+  },
+  {
+    "id": "squirtle",
+    "name": "杰尼龟",
+    "rarity": 2,
+    "habitats": [
+      "coast",
+      "plains"
+    ],
+    "partnerBonus": "生命 +20",
+    "hp": 76,
+    "attack": 13,
+    "modifiers": {
+      "hp": 20
+    }
+  },
+  {
+    "id": "bulbasaur",
+    "name": "妙蛙种子",
+    "rarity": 2,
+    "habitats": [
+      "grass",
+      "forest"
+    ],
+    "partnerBonus": "每回合恢复生命",
+    "hp": 78,
+    "attack": 12,
+    "modifiers": {
+      "regen": 5
+    }
+  },
+  {
+    "id": "gengar",
+    "name": "耿鬼",
+    "rarity": 3,
+    "habitats": [
+      "forest",
+      "plains"
+    ],
+    "partnerBonus": "技能伤害 +8",
+    "hp": 84,
+    "attack": 20,
+    "modifiers": {
+      "skillPower": 8
+    }
+  },
+  {
+    "id": "lucario",
+    "name": "路卡利欧",
+    "rarity": 3,
+    "habitats": [
+      "plains",
+      "hill"
+    ],
+    "partnerBonus": "攻击 +5",
+    "hp": 94,
+    "attack": 23,
+    "modifiers": {
+      "attack": 5
+    }
+  },
+  {
+    "id": "dragonite",
+    "name": "快龙",
+    "rarity": 4,
+    "habitats": [
+      "coast",
+      "hill"
+    ],
+    "partnerBonus": "攻击 +7、移动 +1",
+    "hp": 122,
+    "attack": 29,
+    "modifiers": {
+      "attack": 7,
+      "movement": 1
+    }
+  },
+  {
+    "id": "mewtwo",
+    "name": "超梦",
+    "rarity": 5,
+    "habitats": [
+      "desert",
+      "plains"
+    ],
+    "partnerBonus": "技能伤害 +15",
+    "hp": 138,
+    "attack": 35,
+    "modifiers": {
+      "skillPower": 15
+    }
+  }
+]

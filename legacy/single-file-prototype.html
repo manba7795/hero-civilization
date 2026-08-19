@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>英雄文明：万界六角纪元 · 2.5D地图版</title>
+<style>
+:root{
+  --bg:#091019;--panel:#111b27;--panel2:#172535;--line:#2b4054;--text:#eef5fb;
+  --muted:#96aabd;--gold:#f1c66a;--cyan:#67d4e5;--red:#ff7777;--green:#72db91;--violet:#b79cff
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden}
+button,select{font:inherit}
+button{background:#20364b;color:#f4f9fd;border:1px solid #3a566f;border-radius:8px;padding:8px 10px;cursor:pointer}
+button:hover{background:#29455f} button:disabled{opacity:.42;cursor:not-allowed}
+#app{height:100%;display:grid;grid-template-rows:62px 1fr}
+header{display:flex;align-items:center;gap:14px;padding:0 16px;border-bottom:1px solid #25394a;background:#0d1721}
+.brand{font-weight:850;letter-spacing:.04em;white-space:nowrap}.brand b{color:var(--gold)}
+.stats{display:flex;gap:13px;flex:1;justify-content:center;font-size:13px;white-space:nowrap}.stats b{color:var(--gold)}
+main{display:grid;grid-template-columns:1fr 370px;min-height:0}
+#mapWrap{position:relative;min-width:0;background:radial-gradient(circle at 48% 38%,#173148 0,#0b121b 68%)}
+canvas{display:block;width:100%;height:100%}
+#hint{position:absolute;left:12px;bottom:12px;padding:8px 10px;border:1px solid #294157;border-radius:8px;background:#071019d9;color:#b9cad8;font-size:12px;max-width:720px}
+aside{background:var(--panel);border-left:1px solid #263b4d;padding:12px;overflow:auto}
+.card{background:var(--panel2);border:1px solid #2a4055;border-radius:12px;padding:12px;margin-bottom:10px}
+.card h3{font-size:14px;margin:0 0 8px}.muted{font-size:12px;color:var(--muted);line-height:1.5}.gold{color:var(--gold)}.good{color:var(--green)}.bad{color:var(--red)}.violet{color:var(--violet)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:5px 9px;font-size:12px}.kv b{color:#e8c570}
+.row{display:flex;gap:7px;flex-wrap:wrap}.row button{flex:1;min-width:92px}
+.pill{display:inline-block;font-size:11px;padding:3px 6px;border-radius:999px;background:#23394d;margin:2px}
+.artSlot{font-size:11px;padding:3px 5px;border:1px solid #3a5268;border-radius:6px;margin:2px;display:inline-block}
+.heroLine,.pokeLine{display:grid;grid-template-columns:1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid #273d51}.heroLine:last-child,.pokeLine:last-child{border:0}
+.smallBtn{padding:5px 7px;font-size:11px}
+#log{height:130px;overflow:auto;font-size:11px;line-height:1.55;color:#b7c9d7}
+#modal,#choiceModal{position:fixed;inset:0;z-index:20;background:#05090ed9;display:flex;align-items:center;justify-content:center}
+.hidden{display:none!important}.modalBox{width:min(820px,94vw);max-height:90vh;overflow:auto;background:#111b27;border:1px solid #385773;border-radius:16px;padding:22px;box-shadow:0 24px 80px #000a}
+.modalBox h1{margin:0 0 7px}.modalBox h2{margin:0 0 12px}.modalBox p{color:#adc0cf;line-height:1.6}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pick{background:#172638;border:1px solid #324c66;border-radius:12px;padding:12px;cursor:pointer}.pick:hover,.pick.sel{outline:2px solid #e4bd61}.pick b{display:block;margin-bottom:5px}
+.big{width:100%;margin-top:14px;padding:12px;font-weight:800}
+@media(max-width:980px){main{grid-template-columns:1fr 310px}.stats{gap:7px;font-size:11px}.brand{font-size:13px}.grid3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="brand">英雄文明：<b>万界六角纪元 · 2.5D</b></div>
+  <div class="stats">
+    <span>🍞 <b id="food">0</b></span><span>⚒ <b id="prod">0</b></span><span>💰 <b id="gold">0</b></span>
+    <span>🔬 <b id="science">0</b>/回合</span><span>🎭 <b id="culture">0</b>/回合</span>
+    <span>🔴 精灵球 <b id="balls">0</b></span>
+  </div>
+  <b id="turnInfo">第1回合</b><button id="endTurn">结束回合</button>
+</header>
+<main>
+  <div id="mapWrap"><canvas id="map"></canvas><div id="hint">2.5D 地形层已启用：六角格只在选择/移动时显示。国家=固定领袖；英雄=自由招募；神器=英雄装备；野生精灵按生态地形刷新，可削弱后捕获。</div></div>
+  <aside>
+    <div class="card"><h3>国家与固定领袖</h3><div id="leaderBox"></div></div>
+    <div class="card"><h3>当前选择</h3><div id="selection" class="muted">未选择。</div></div>
+    <div class="card"><h3>行动</h3><div id="actions" class="row"><button disabled>暂无</button></div></div>
+    <div class="card"><h3>英雄名册</h3><div id="heroesBox"></div></div>
+    <div class="card"><h3>精灵仓库</h3><div id="pokemonBox"></div></div>
+    <div class="card"><h3>神器仓库</h3><div id="artifactsBox"></div></div>
+    <div class="card"><h3>科研</h3><div id="techBox"></div><div id="techProgress" class="muted"></div></div>
+    <div class="card"><h3>事件记录</h3><div id="log"></div></div>
+  </aside>
+</main>
+</div>
+
+<div id="modal">
+  <div class="modalBox">
+    <h1>英雄文明：万界六角纪元</h1>
+    <p>原创 4X 回合制玩法原型：固定国家领袖、跨国家任选英雄、神器装备构筑，以及会在六角格中刷新并可捕获的野生精灵。</p>
+    <h2>选择国家</h2>
+    <div id="nationGrid" class="grid3">
+      <div class="pick sel" data-nation="astral"><b>星穹共和国</b><span class="muted">固定领袖：塞勒斯<br>城市科研 +1。</span></div>
+      <div class="pick" data-nation="forge"><b>赤炉帝国</b><span class="muted">固定领袖：伊莱恩<br>城市生产 +1。</span></div>
+      <div class="pick" data-nation="verdant"><b>森海同盟</b><span class="muted">固定领袖：弥娅<br>城市粮食 +1。</span></div>
+    </div>
+    <button class="big" id="startBtn">开始新纪元</button>
+    <p class="muted">本原型不包含 Riot、TFT、Pokémon 官方图片、音频或原始游戏代码，仅使用角色名称与原创玩法实现。</p>
+  </div>
+</div>
+
+<div id="choiceModal" class="hidden">
+  <div class="modalBox">
+    <h2 id="choiceTitle">选择</h2>
+    <div id="choiceBody" class="grid3"></div>
+    <button class="big" id="choiceCancel">取消</button>
+  </div>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id), canvas=$('map'), ctx=canvas.getContext('2d');
+const SQ=Math.sqrt(3), R=34, YS=.70, COLS=16, ROWS=11;
+let dpr=Math.max(1,window.devicePixelRatio||1), ox=55,oy=54,selected=null,chosenNation='astral',state=null;
+
+const nations={
+ astral:{name:'星穹共和国',leader:'塞勒斯',trait:'理性之光',desc:'所有城市科研 +1',bonus:'science'},
+ forge:{name:'赤炉帝国',leader:'伊莱恩',trait:'钢铁意志',desc:'所有城市生产 +1',bonus:'prod'},
+ verdant:{name:'森海同盟',leader:'弥娅',trait:'生生不息',desc:'所有城市粮食 +1',bonus:'food'}
+};
+const heroes={
+ garen:{name:'盖伦',role:'先锋',cost:45,hp:150,atk:22,move:2,range:1,skill:'审判',skillDmg:38,skillRange:1},
+ yasuo:{name:'亚索',role:'决斗者',cost:55,hp:110,atk:29,move:3,range:1,skill:'斩钢闪',skillDmg:48,skillRange:1},
+ ahri:{name:'阿狸',role:'法师',cost:60,hp:95,atk:24,move:3,range:1,skill:'灵魄冲击',skillDmg:52,skillRange:2},
+ jinx:{name:'金克丝',role:'枪手',cost:55,hp:100,atk:28,move:3,range:1,skill:'超究极死神飞弹',skillDmg:58,skillRange:3},
+ lee:{name:'李青',role:'斗士',cost:60,hp:125,atk:30,move:3,range:1,skill:'猛龙摆尾',skillDmg:44,skillRange:1},
+ lux:{name:'拉克丝',role:'法师',cost:55,hp:92,atk:23,move:3,range:1,skill:'终极闪光',skillDmg:50,skillRange:3},
+ sett:{name:'瑟提',role:'斗士',cost:65,hp:160,atk:31,move:2,range:1,skill:'叹为观止',skillDmg:60,skillRange:1},
+ ezreal:{name:'伊泽瑞尔',role:'射手',cost:50,hp:95,atk:27,move:4,range:1,skill:'秘术射击',skillDmg:42,skillRange:2},
+ kayn:{name:'凯隐',role:'刺客',cost:70,hp:115,atk:34,move:4,range:1,skill:'掠影步',skillDmg:0,skillRange:2}
+};
+const artifacts={
+ collector:{name:'金币收集者',desc:'击杀敌军额外获得 20 金币。',atk:3,hp:0,move:0,skill:0},
+ sniper:{name:'狙击手的专注',desc:'攻击 +7，技能射程 +1。',atk:7,hp:0,move:0,skill:0,range:1},
+ infinity:{name:'无尽之力',desc:'攻击 +5，生命 +25，移动 +1。',atk:5,hp:25,move:1,skill:0},
+ lich:{name:'巫妖之祸',desc:'攻击 +2，技能后下一次攻击额外 +16。',atk:2,hp:0,move:0,skill:0},
+ mogul:{name:'大亨之铠',desc:'生命 +45。',atk:0,hp:45,move:0,skill:0},
+ mirror:{name:'诡术师之镜',desc:'生命 +10；首次受到致命伤保留 1 HP。',atk:0,hp:10,move:0,skill:0},
+ deathfire:{name:'冥火之拥',desc:'英雄技能伤害 +16。',atk:0,hp:0,move:0,skill:16},
+ fishbones:{name:'鱼骨头',desc:'攻击 +6，移动 +1。',atk:6,hp:0,move:1,skill:0}
+};
+const pokemon={
+ pikachu:{name:'皮卡丘',rarity:1,terrains:['grass','plains'],hp:55,atk:12,bonus:'英雄移动 +1',move:1,heroAtk:0},
+ eevee:{name:'伊布',rarity:1,terrains:['grass','forest'],hp:60,atk:10,bonus:'英雄生命 +15',heroHp:15},
+ charmander:{name:'小火龙',rarity:2,terrains:['hills','desert'],hp:65,atk:15,bonus:'英雄攻击 +3',heroAtk:3},
+ squirtle:{name:'杰尼龟',rarity:2,terrains:['water','plains'],hp:72,atk:12,bonus:'英雄生命 +20',heroHp:20},
+ bulbasaur:{name:'妙蛙种子',rarity:2,terrains:['grass','forest'],hp:74,atk:11,bonus:'英雄每回合恢复 5 HP',regen:5},
+ gengar:{name:'耿鬼',rarity:3,terrains:['forest','hills'],hp:82,atk:19,bonus:'英雄技能伤害 +8',skill:8},
+ lucario:{name:'路卡利欧',rarity:3,terrains:['hills','plains'],hp:90,atk:22,bonus:'英雄攻击 +5',heroAtk:5},
+ dragonite:{name:'快龙',rarity:4,terrains:['hills','water'],hp:120,atk:28,bonus:'攻击 +7、移动 +1',heroAtk:7,move:1},
+ mewtwo:{name:'超梦',rarity:5,terrains:['hills','desert'],hp:135,atk:34,bonus:'技能伤害 +15',skill:15}
+};
+const techs={
+ agriculture:{name:'农业',cost:20,desc:'城市粮食 +1'},
+ writing:{name:'文字',cost:28,desc:'城市科研 +1'},
+ bronze:{name:'青铜铸造',cost:32,desc:'普通军队攻击 +3'},
+ heroics:{name:'英雄史诗',cost:38,desc:'英雄招募费用 -10'},
+ relic:{name:'神器学',cost:45,desc:'神器宝箱费用 -10'}
+};
+const terrain={
+ grass:{name:'草地',c:'#6e9b58',food:2,prod:0,move:1},
+ plains:{name:'平原',c:'#9a9a57',food:2,prod:1,move:1},
+ forest:{name:'森林',c:'#4e794b',food:1,prod:2,move:2},
+ hills:{name:'丘陵',c:'#8c805d',food:0,prod:2,move:2},
+ mountain:{name:'山脉',c:'#797b72',food:0,prod:0,move:99},
+ desert:{name:'沙漠',c:'#c4a66b',food:0,prod:1,move:1},
+ water:{name:'浅海',c:'#347d99',food:1,prod:0,move:99}
+};
+const dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const neigh=(q,r)=>dirs.map(d=>[q+d[0],r+d[1]]).filter(([a,b])=>a>=0&&a<COLS&&b>=0&&b<ROWS);
+const dist=(a,b)=>Math.max(Math.abs(a.q-b.q),Math.abs(a.r-b.r),Math.abs((-a.q-a.r)-(-b.q-b.r)));
+const seeded=n=>{const x=Math.sin(n*12.9898+78.233)*43758.5453;return x-Math.floor(x)};
+function worldNoise(q,r,s=0){
+ const a=Math.sin((q+s*.11)*.57)+Math.cos((r-s*.07)*.63)+Math.sin((q+r+s*.03)*.31)*.85;
+ const b=Math.cos((q*1.7-r*.8+s)*.19)*.55;
+ return (a+b+3.4)/6.8;
+}
+function tileLift(t){
+ if(!t)return 0;
+ if(t.type==='mountain')return 30;
+ if(t.type==='hills')return 12;
+ return 0;
+}
+const baseCenter=(q,r)=>({x:ox+R*SQ*(q+r/2),y:oy+R*1.5*YS*r});
+function center(q,r){const c=baseCenter(q,r),t=state?.map?.find(x=>x.q===q&&x.r===r);return{x:c.x,y:c.y-tileLift(t)}}
+function hexPts(x,y,rr=R-1,ys=YS){const pts=[];for(let i=0;i<6;i++){const a=(60*i-30)*Math.PI/180;pts.push({x:x+rr*Math.cos(a),y:y+rr*Math.sin(a)*ys})}return pts}
+function pathPts(pts){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath()}
+function poly(x,y,rr=R-1){pathPts(hexPts(x,y,rr))}
+function edgePts(t,di,raised=true){
+ const b=baseCenter(t.q,t.r),cy=raised?b.y-tileLift(t):b.y,pts=hexPts(b.x,cy,R+.8);
+ const map=[[0,1],[5,0],[4,5],[3,4],[2,3],[1,2]],e=map[di];return[pts[e[0]],pts[e[1]]]
+}
+function tile(q,r){return state.map.find(t=>t.q===q&&t.r===r)}
+function unitAt(q,r){return state.units.find(u=>u.hp>0&&u.q===q&&u.r===r)}
+function cityAt(q,r){return state.cities.find(c=>c.hp>0&&c.q===q&&c.r===r)}
+function wildAt(q,r){return state.wild.find(w=>w.hp>0&&w.q===q&&w.r===r)}
+function heroDef(u){return u&&u.kind==='hero'?heroes[u.heroId]:null}
+function partnerDef(u){return u&&u.partnerId?pokemon[u.partnerId]:null}
+function artifactStats(u){
+ let x={atk:0,hp:0,move:0,skill:0,range:0};
+ (u.artifacts||[]).forEach(id=>{const a=artifacts[id];if(a){for(const k of Object.keys(x))x[k]+=a[k]||0}});
+ return x
+}
+function maxHP(u){const p=partnerDef(u);return u.kind==='hero'?heroDef(u).hp+artifactStats(u).hp+(p?.heroHp||0):100}
+function maxMove(u){const p=partnerDef(u);return u.kind==='hero'?heroDef(u).move+artifactStats(u).move+(p?.move||0):2}
+function attack(u){const p=partnerDef(u);let n=u.kind==='hero'?heroDef(u).atk:14;if(state.researched.includes('bronze')&&u.owner==='player'&&u.kind!=='hero')n+=3;return n+artifactStats(u).atk+(p?.heroAtk||0)}
+function skillDamage(u){const p=partnerDef(u);return (heroDef(u)?.skillDmg||0)+artifactStats(u).skill+(p?.skill||0)}
+function skillRange(u){return (heroDef(u)?.skillRange||1)+artifactStats(u).range}
+function log(s,cls=''){const e=document.createElement('div');e.className=cls;e.textContent='• '+s;$('log').prepend(e)}
+function genMap(){
+ const m=[];
+ for(let r=0;r<ROWS;r++)for(let q=0;q<COLS;q++){
+   const edge=Math.min(q,r,COLS-1-q,ROWS-1-r);
+   let h=worldNoise(q,r,state.seed)*.78+seeded(q*73+r*41+state.seed)*.22;
+   const moist=worldNoise(q+17,r-9,state.seed+91)*.72+seeded(q*31+r*67+state.seed+13)*.28;
+   if(edge===0)h-=.28;else if(edge===1)h-=.08;
+   let type;
+   if(h<.32)type='water';
+   else if(h>.79)type='mountain';
+   else if(h>.67)type='hills';
+   else if(moist<.30)type='desert';
+   else if(moist>.63)type='forest';
+   else if(moist>.48)type='grass';
+   else type='plains';
+   const rr=seeded(q*73+r*41+state.seed+8);
+   let res=type!=='water'&&type!=='mountain'&&rr>.88?(rr>.96?'铁':rr>.93?'石材':rr>.905?'小麦':'鹿'):null;
+   m.push({q,r,type,res,owner:null,height:h,moist})
+ }
+ return m
+}
+function mkUnit(kind,owner,q,r,heroId=null){
+ const u={id:state.nextUnit++,kind,owner,q,r,hp:100,move:2,heroId,artifacts:[],partnerId:null,skillUsed:false,shield:0,mirrorUsed:false,lichReady:false};
+ if(kind==='hero'){u.hp=heroes[heroId].hp;u.move=heroes[heroId].move} return u
+}
+function mkCity(owner,q,r,name,capital=false){return{id:state.nextCity++,owner,q,r,name,pop:1,food:0,prod:0,build:'warrior',hp:110,def:20,capital}}
+function clearSpawn(q,r){const t=tile(q,r);if(t)t.type='plains'}
+function newGame(n){
+ state={mapVersion:2,seed:Math.floor(Math.random()*999999),turn:1,nation:n,resources:{gold:90,balls:5},scienceBank:0,cultureBank:0,currentTech:'agriculture',researched:[],map:[],cities:[],units:[],wild:[],inventory:[],captured:[],recruited:[],nextUnit:1,nextCity:1,gameOver:false};
+ state.map=genMap();[[2,2],[3,2],[2,3],[13,8],[14,8],[13,9]].forEach(([q,r])=>clearSpawn(q,r));
+ state.units.push(mkUnit('settler','player',2,2),mkUnit('warrior','player',3,2),mkUnit('settler','ai',13,8),mkUnit('warrior','ai',14,8));
+ foundAIInitial();spawnWild(8);
+ selected=state.units.find(u=>u.owner==='player'&&u.kind==='settler');
+ $('modal').classList.add('hidden');log('纪元开始：先建立首都，再招募英雄探索精灵生态。','good');save();updateUI();draw()
+}
+function foundAIInitial(){const s=state.units.find(u=>u.owner==='ai'&&u.kind==='settler');state.cities.push(mkCity('ai',s.q,s.r,'暮铁城',true));tile(s.q,s.r).owner='ai';s.hp=0}
+function spawnWild(count=2){
+ const ids=Object.keys(pokemon);
+ for(let i=0;i<count;i++){
+   const free=state.map.filter(t=>t.type!=='water'&&!unitAt(t.q,t.r)&&!cityAt(t.q,t.r)&&!wildAt(t.q,t.r)&&dist(t,{q:2,r:2})>2);
+   if(!free.length)break;
+   const t=free[Math.floor(Math.random()*free.length)];
+   const candidates=ids.filter(id=>pokemon[id].terrains.includes(t.type));
+   if(!candidates.length)continue;
+   const weighted=[];
+   for(const id of candidates){const r=pokemon[id].rarity,w=Math.max(1,7-r*1.2);for(let j=0;j<Math.round(w);j++)weighted.push(id)}
+   const pid=weighted[Math.floor(Math.random()*weighted.length)],p=pokemon[pid];
+   state.wild.push({id:'w'+Date.now()+i+Math.random(),pokemonId:pid,q:t.q,r:t.r,hp:p.hp,maxHp:p.hp})
+ }
+}
+function cityYield(c){
+ let y={food:2,prod:1,gold:2,science:1,culture:1};const cells=[[c.q,c.r],...neigh(c.q,c.r)].slice(0,Math.min(1+c.pop,7));
+ for(const [q,r] of cells){const t=tile(q,r),d=terrain[t.type];y.food+=d.food;y.prod+=d.prod;if(t.res==='小麦')y.food++;if(t.res==='石材'||t.res==='铁')y.prod++}
+ if(c.owner==='player'){if(state.nation==='astral')y.science++;if(state.nation==='forge')y.prod++;if(state.nation==='verdant')y.food++;if(state.researched.includes('agriculture'))y.food++;if(state.researched.includes('writing'))y.science++}
+ for(const u of state.units.filter(u=>u.owner===c.owner&&u.kind==='hero'&&u.q===c.q&&u.r===c.r)){if((u.artifacts||[]).includes('mogul'))y.gold+=2}
+ return y
+}
+function totals(){return state.cities.filter(c=>c.owner==='player').reduce((a,c)=>{const y=cityYield(c);for(const k of Object.keys(a))a[k]+=y[k]||0;return a},{food:0,prod:0,gold:0,science:0,culture:0})}
+function cityTurn(c){
+ const y=cityYield(c);c.food+=y.food;c.prod+=y.prod;const grow=14+c.pop*7;if(c.food>=grow){c.food-=grow;c.pop++;if(c.owner==='player')log(`${c.name} 人口增长到 ${c.pop}。`,'good')}
+ const costs={warrior:24,settler:40};if(c.prod>=costs[c.build]){c.prod-=costs[c.build];const spot=neigh(c.q,c.r).find(([q,r])=>tile(q,r).type!=='water'&&!unitAt(q,r)&&!cityAt(q,r)&&!wildAt(q,r));if(spot){state.units.push(mkUnit(c.build,c.owner,spot[0],spot[1]));if(c.owner==='player')log(`${c.name} 完成了${c.build==='warrior'?'战士':'开拓者'}。`,'good')}}
+}
+function researchTick(){const id=state.currentTech;if(!id)return;const t=techs[id];if(state.scienceBank>=t.cost){state.scienceBank-=t.cost;state.researched.push(id);log(`研究完成：${t.name}。`,'good');state.currentTech=Object.keys(techs).find(x=>!state.researched.includes(x))||null}}
+function endTurn(){
+ if(!state||state.gameOver)return;
+ const t=totals();state.resources.gold+=t.gold;state.scienceBank+=t.science;state.cultureBank+=t.culture;
+ for(const c of state.cities)cityTurn(c);researchTick();aiTurn();
+ for(const u of state.units){u.move=maxMove(u);u.skillUsed=false;u.shield=0;const p=partnerDef(u);if(p?.regen)u.hp=Math.min(maxHP(u),u.hp+p.regen)}
+ if(Math.random()<.65)spawnWild(1);state.units=state.units.filter(u=>u.hp>0);state.wild=state.wild.filter(w=>w.hp>0);
+ state.turn++;selected=null;checkVictory();save();updateUI();draw()
+}
+function aiTurn(){
+ const playerCities=state.cities.filter(c=>c.owner==='player');
+ for(const u of state.units.filter(u=>u.owner==='ai'&&u.kind==='warrior'&&u.hp>0)){
+   const target=playerCities.sort((a,b)=>dist(u,a)-dist(u,b))[0]||state.units.find(x=>x.owner==='player');if(!target)continue;
+   for(let s=0;s<2;s++){
+     const adj=neigh(u.q,u.r),victim=adj.map(([q,r])=>unitAt(q,r)).find(x=>x&&x.owner==='player');if(victim){combat(u,victim);break}
+     const cc=adj.map(([q,r])=>cityAt(q,r)).find(x=>x&&x.owner==='player');if(cc){attackCity(u,cc);break}
+     const opts=adj.map(([q,r])=>tile(q,r)).filter(t=>t.type!=='water'&&!unitAt(t.q,t.r)&&!cityAt(t.q,t.r)&&!wildAt(t.q,t.r));opts.sort((a,b)=>dist(a,target)-dist(b,target));if(opts[0]){u.q=opts[0].q;u.r=opts[0].r}
+   }
+ }
+}
+function lethalCheck(u){
+ if(u.hp>0)return;
+ if(u.kind==='hero'&&(u.artifacts||[]).includes('mirror')&&!u.mirrorUsed){u.mirrorUsed=true;u.hp=1;log(`${heroDef(u).name} 的诡术师之镜触发，保留 1 点生命。`,'violet')}
+}
+function combat(a,d){
+ const da=Math.max(9,Math.round(25+(attack(a)-attack(d))*.9)),ra=Math.max(5,Math.round(12+(attack(d)-attack(a))*.45));
+ d.hp-=da;a.hp-=Math.max(0,ra-(a.shield||0));a.shield=Math.max(0,(a.shield||0)-ra);lethalCheck(a);lethalCheck(d);
+ if(a.owner==='player')log(`攻击造成 ${da} 伤害。`,'good');if(d.owner==='player')log(`我方单位受到 ${da} 伤害。`,'bad');
+ if(d.hp<=0&&a.owner==='player'&&a.kind==='hero'&&(a.artifacts||[]).includes('collector')){state.resources.gold+=20;log('金币收集者：+20 金币。','gold')}
+}
+function attackCity(u,c){const dmg=Math.max(7,Math.round(20+(attack(u)-c.def)*.5));c.hp-=dmg;u.hp-=8;lethalCheck(u);if(c.owner==='player')log(`${c.name} 遭受攻击，城防 -${dmg}。`,'bad');if(c.hp<=0){c.owner=u.owner;c.hp=60;c.pop=Math.max(1,c.pop-1);tile(c.q,c.r).owner=u.owner;log(`${c.name} 被${u.owner==='player'?'我方':'敌方'}占领。`,u.owner==='player'?'good':'bad')}}
+function fightWild(u,w){
+ const p=pokemon[w.pokemonId],dmg=Math.max(8,attack(u)+Math.floor(Math.random()*8)-p.atk/2);w.hp-=dmg;
+ const retaliation=Math.max(3,p.atk-Math.floor(attack(u)/5));u.hp-=retaliation;lethalCheck(u);
+ log(`${u.kind==='hero'?heroDef(u).name:'战士'} 对野生${p.name}造成 ${Math.round(dmg)} 伤害；受到 ${retaliation} 反击。`,w.hp<=0?'good':'');
+ if(w.hp<=0){log(`野生${p.name}被击倒，无法捕获。`,'bad')}
+}
+function captureWild(u,w){
+ if(state.resources.balls<=0)return log('没有精灵球。','bad');
+ state.resources.balls--;const p=pokemon[w.pokemonId],hpFactor=1-w.hp/w.maxHp,base=.34+hpFactor*.48-p.rarity*.055,chance=Math.max(.08,Math.min(.88,base)),roll=Math.random();
+ if(roll<chance){state.captured.push({uid:'p'+Date.now()+Math.random(),pokemonId:w.pokemonId,partnerOf:null});w.hp=0;log(`捕获成功：${p.name}！`,'good')}
+ else{log(`捕获失败：${p.name}挣脱了。成功率约 ${Math.round(chance*100)}%。`,'bad')}
+}
+function foundCity(){
+ const u=getSelUnit();if(!u||u.kind!=='settler')return;if(cityAt(u.q,u.r)||tile(u.q,u.r).type==='water')return;
+ if(state.cities.some(c=>c.owner==='player'&&dist(c,u)<3))return log('城市距离过近，至少间隔 3 格。','bad');
+ const names=['曙光城','白石港','风原城','星河城','远望城'];const c=mkCity('player',u.q,u.r,names[state.cities.filter(x=>x.owner==='player').length]||('新城'+state.nextCity),state.cities.filter(x=>x.owner==='player').length===0);
+ state.cities.push(c);tile(u.q,u.r).owner='player';u.hp=0;selected={kind:'city',id:c.id};log(`建立城市：${c.name}。`,'good');save();updateUI();draw()
+}
+function heal(){const u=getSelUnit();if(!u)return;u.hp=Math.min(maxHP(u),u.hp+28);u.move=0;log('单位休整，恢复 28 HP。');save();updateUI();draw()}
+function recruitHero(){
+ const c=getSelCity();if(!c)return;openChoice('招募英雄',Object.entries(heroes).filter(([id])=>!state.recruited.includes(id)).map(([id,h])=>({title:`${h.name} · ${h.role}`,desc:`费用 ${Math.max(20,h.cost-(state.researched.includes('heroics')?10:0))} 金币<br>HP ${h.hp} / 攻击 ${h.atk} / 移动 ${h.move}<br>技能：${h.skill}`,value:id})),id=>{
+   const h=heroes[id],cost=Math.max(20,h.cost-(state.researched.includes('heroics')?10:0));if(state.resources.gold<cost)return log('金币不足。','bad');
+   const spot=[[c.q,c.r],...neigh(c.q,c.r)].find(([q,r])=>tile(q,r).type!=='water'&&!unitAt(q,r)&&!wildAt(q,r));if(!spot)return log('城市周围没有可部署位置。','bad');
+   state.resources.gold-=cost;const u=mkUnit('hero','player',spot[0],spot[1],id);state.units.push(u);state.recruited.push(id);log(`${h.name} 加入文明。`,'good');selected={kind:'unit',id:u.id};save();updateUI();draw()
+ })
+}
+function openArtifactChest(){
+ const cost=state.researched.includes('relic')?30:40;if(state.resources.gold<cost)return log(`需要 ${cost} 金币开启神器宝箱。`,'bad');
+ const pool=Object.keys(artifacts),choices=[];while(choices.length<3){const id=pool[Math.floor(Math.random()*pool.length)];if(!choices.includes(id))choices.push(id)}
+ openChoice(`神器三选一 · 费用 ${cost} 金币`,choices.map(id=>({title:artifacts[id].name,desc:artifacts[id].desc,value:id})),id=>{if(state.resources.gold<cost)return;state.resources.gold-=cost;state.inventory.push(id);log(`获得神器：${artifacts[id].name}。`,'violet');save();updateUI()})
+}
+function equipArtifact(invIndex){
+ const u=getSelUnit();if(!u||u.kind!=='hero')return;if((u.artifacts||[]).length>=3)return log('该英雄的 3 个神器槽已满。','bad');
+ const id=state.inventory[invIndex];if(!id)return;u.artifacts.push(id);state.inventory.splice(invIndex,1);log(`${heroDef(u).name} 装备了 ${artifacts[id].name}。`,'violet');u.hp=Math.min(maxHP(u),u.hp+(artifacts[id].hp||0));save();updateUI();draw()
+}
+function assignPokemon(uid){
+ const u=getSelUnit();if(!u||u.kind!=='hero')return;const p=state.captured.find(x=>x.uid===uid);if(!p)return;
+ if(u.partnerId){const old=state.captured.find(x=>x.uid===u.partnerCaptureUid);if(old)old.partnerOf=null}
+ p.partnerOf=u.id;u.partnerId=p.pokemonId;u.partnerCaptureUid=p.uid;log(`${heroDef(u).name} 选择 ${pokemon[p.pokemonId].name} 作为伙伴。`,'good');save();updateUI();draw()
+}
+function useSkill(){
+ const u=getSelUnit();if(!u||u.kind!=='hero'||u.skillUsed)return;const h=heroDef(u);
+ if(u.heroId==='kayn'){const opts=state.map.filter(t=>dist(u,t)<=2&&dist(u,t)>0&&t.type!=='water'&&!unitAt(t.q,t.r)&&!cityAt(t.q,t.r)&&!wildAt(t.q,t.r));if(!opts.length)return log('附近没有可瞬移空地。','bad');const t=opts.sort((a,b)=>dist(a,u)-dist(b,u))[0];u.q=t.q;u.r=t.r;u.hp=Math.min(maxHP(u),u.hp+20);u.skillUsed=true;log('凯隐发动掠影步，瞬移并恢复 20 HP。','violet');updateUI();draw();return}
+ const targets=[...state.units.filter(x=>x.owner!=='player'&&x.hp>0),...state.wild.filter(x=>x.hp>0)].filter(x=>dist(u,x)<=skillRange(u));
+ if(!targets.length)return log(`技能范围 ${skillRange(u)} 格内没有目标。`,'bad');
+ openChoice(`${h.name} · ${h.skill}`,targets.map(x=>{const isWild=!!x.pokemonId;return{title:isWild?`野生${pokemon[x.pokemonId].name}`:'敌方单位',desc:`距离 ${dist(u,x)} · HP ${Math.max(0,Math.round(x.hp))}`,value:x.id}}),id=>{
+   const target=state.units.find(x=>x.id==id)||state.wild.find(x=>x.id==id);if(!target)return;const dmg=skillDamage(u);target.hp-=dmg;u.skillUsed=true;if((u.artifacts||[]).includes('lich'))u.lichReady=true;
+   if(u.heroId==='garen')u.shield+=12;if(u.heroId==='sett')u.hp-=8;lethalCheck(u);if(target.kind)lethalCheck(target);
+   log(`${h.name} 使用 ${h.skill}，造成 ${dmg} 伤害。`,'violet');save();updateUI();draw()
+ })
+}
+function getSelUnit(){return selected?.kind==='unit'?state.units.find(u=>u.id===selected.id):null}
+function getSelCity(){return selected?.kind==='city'?state.cities.find(c=>c.id===selected.id):null}
+function setBuild(x){const c=getSelCity();if(c){c.build=x;save();updateUI()}}
+function setResearch(id){if(!state.researched.includes(id)){state.currentTech=id;save();updateUI()}}
+function openChoice(title,items,onPick){
+ $('choiceTitle').textContent=title;$('choiceBody').innerHTML=items.length?items.map((x,i)=>`<div class="pick choiceItem" data-i="${i}"><b>${x.title}</b><span class="muted">${x.desc||''}</span></div>`).join(''):'<div class="muted">没有可选项。</div>';$('choiceModal').classList.remove('hidden');
+ [...document.querySelectorAll('.choiceItem')].forEach(el=>el.onclick=()=>{const x=items[+el.dataset.i];$('choiceModal').classList.add('hidden');onPick(x.value)})
+}
+$('choiceCancel').onclick=()=>$('choiceModal').classList.add('hidden');
+function save(){try{localStorage.setItem('heroCivilizationSave',JSON.stringify(state))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('heroCivilizationSave'));if(!s)return log('没有本地存档。','bad');state=s;if(!state.mapVersion||state.mapVersion<2){state.map=genMap();for(const c of state.cities||[])clearSpawn(c.q,c.r);for(const u of (state.units||[]).filter(x=>x.hp>0))clearSpawn(u.q,u.r);state.mapVersion=2;log('旧存档已自动迁移到 2.5D 地图系统。','good')}selected=null;$('modal').classList.add('hidden');log('已读取本地存档。');save();updateUI();draw()}catch(e){log('存档读取失败。','bad')}}
+function checkVictory(){
+ const pc=state.cities.filter(c=>c.owner==='player').length,ac=state.cities.filter(c=>c.owner==='ai').length;if(pc===0&&state.turn>3){state.gameOver=true;alert('失败：你的文明失去了所有城市。')}
+ if(ac===0&&pc>0){state.gameOver=true;alert('征服胜利：敌对文明已被消灭。')}
+ if(state.researched.length===Object.keys(techs).length&&state.recruited.length>=3&&state.captured.length>=5&&!state.gameOver){state.gameOver=true;alert('万界胜利：完成全部科技、招募至少3名英雄并捕获至少5只精灵。')}
+}
+function clickMap(ev){
+ if(!state)return;const rect=canvas.getBoundingClientRect(),mx=(ev.clientX-rect.left)*canvas.width/rect.width/dpr,my=(ev.clientY-rect.top)*canvas.height/rect.height/dpr;
+ let best=null,bd=999;for(const t of state.map){const c=center(t.q,t.r),d=Math.hypot(mx-c.x,my-c.y);if(d<bd){bd=d;best=t}}if(!best||bd>R)return;
+ const u=unitAt(best.q,best.r),c=cityAt(best.q,best.r),w=wildAt(best.q,best.r);
+ if(u&&u.owner==='player'){selected={kind:'unit',id:u.id};updateUI();draw();return}
+ if(c&&c.owner==='player'){selected={kind:'city',id:c.id};updateUI();draw();return}
+ const su=getSelUnit();
+ if(su){
+   if(w&&dist(su,w)===1){selected={kind:'wild',id:w.id,fromUnit:su.id};updateUI();draw();return}
+   if(dist(su,best)!==1||su.move<=0)return log('只能移动到相邻六角格。');
+   const enemy=unitAt(best.q,best.r),enemyCity=cityAt(best.q,best.r);
+   if(enemy&&enemy.owner!=='player'){combat(su,enemy);su.move=0}
+   else if(enemyCity&&enemyCity.owner!=='player'){attackCity(su,enemyCity);su.move=0}
+   else if(!u&&!c&&!w&&terrain[best.type].move<99){su.q=best.q;su.r=best.r;su.move=Math.max(0,su.move-terrain[best.type].move)}
+   save();updateUI();draw();return
+ }
+ if(w){selected={kind:'wild',id:w.id,fromUnit:null};updateUI();draw();return}
+ selected={kind:'tile',q:best.q,r:best.r};updateUI();draw()
+}
+function updateUI(){
+ if(!state)return;const t=totals();$('food').textContent=t.food;$('prod').textContent=t.prod;$('gold').textContent=state.resources.gold;$('science').textContent=t.science;$('culture').textContent=t.culture;$('balls').textContent=state.resources.balls;$('turnInfo').textContent=`第 ${state.turn} 回合`;
+ const n=nations[state.nation];$('leaderBox').innerHTML=`<div class="kv"><span>国家</span><b>${n.name}</b><span>固定领袖</span><b>${n.leader}</b><span>领袖特性</span><b>${n.trait}</b></div><div class="muted">${n.desc}</div>`;
+ const su=getSelUnit(),sc=getSelCity(),sw=selected?.kind==='wild'?state.wild.find(w=>w.id===selected.id):null;
+ if(su){
+   const h=heroDef(su),p=partnerDef(su);$('selection').innerHTML=su.kind==='hero'?`<b>${h.name}</b> · ${h.role}<br>HP ${Math.round(su.hp)}/${maxHP(su)} · 攻击 ${attack(su)} · 移动 ${su.move}/${maxMove(su)}<br>技能：${h.skill}${p?`<br>伙伴：<span class="good">${p.name}</span>（${p.bonus}）`:''}<br>${(su.artifacts||[]).length?su.artifacts.map(id=>`<span class="artSlot">${artifacts[id].name}</span>`).join(''):'<span class="muted">神器槽 0/3</span>'}`:`<b>${su.kind==='settler'?'开拓者':'战士'}</b><br>HP ${Math.round(su.hp)}/100 · 攻击 ${attack(su)} · 移动 ${su.move}/2`;
+   const arr=[];if(su.kind==='settler')arr.push('<button id="foundBtn">建立城市</button>');if(su.kind==='hero')arr.push(`<button id="skillBtn" ${su.skillUsed?'disabled':''}>使用技能</button>`);arr.push('<button id="healBtn">休整</button>');$('actions').innerHTML=arr.join('');$('foundBtn')?.addEventListener('click',foundCity);$('skillBtn')?.addEventListener('click',useSkill);$('healBtn').onclick=heal;
+ }else if(sc){
+   const y=cityYield(sc);$('selection').innerHTML=`<b>${sc.name}</b>${sc.capital?' · 首都':''}<br>人口 ${sc.pop} · 城防 ${Math.round(sc.hp)}/110<br>产出 🍞${y.food} ⚒${y.prod} 💰${y.gold} 🔬${y.science}`;
+   $('actions').innerHTML=`<button data-build="warrior">造战士 24⚒</button><button data-build="settler">造开拓者 40⚒</button><button id="recruitHero">招募英雄</button><button id="artifactChest">神器宝箱</button><button id="buyBalls">购买精灵球</button>`;
+   document.querySelectorAll('[data-build]').forEach(b=>b.onclick=()=>setBuild(b.dataset.build));$('recruitHero').onclick=recruitHero;$('artifactChest').onclick=openArtifactChest;$('buyBalls').onclick=()=>{if(state.resources.gold<15)return log('金币不足。','bad');state.resources.gold-=15;state.resources.balls+=3;log('购买 3 个精灵球。');save();updateUI()}
+ }else if(sw){
+   const p=pokemon[sw.pokemonId],near=selected.fromUnit?state.units.find(u=>u.id===selected.fromUnit):state.units.find(u=>u.owner==='player'&&dist(u,sw)===1);
+   const chance=Math.max(.08,Math.min(.88,.34+(1-sw.hp/sw.maxHp)*.48-p.rarity*.055));$('selection').innerHTML=`<b>野生${p.name}</b> · 稀有度 ${'★'.repeat(p.rarity)}<br>HP ${Math.max(0,Math.round(sw.hp))}/${sw.maxHp}<br>捕获成功率约 ${Math.round(chance*100)}%<br><span class="muted">伙伴效果：${p.bonus}</span>`;
+   $('actions').innerHTML=near?`<button id="fightWild">战斗削弱</button><button id="captureWild">使用精灵球捕获</button>`:'<button disabled>让一个己方单位移动到相邻格</button>';
+   if(near){$('fightWild').onclick=()=>{fightWild(near,sw);save();updateUI();draw()};$('captureWild').onclick=()=>{captureWild(near,sw);save();updateUI();draw()}}
+ }else{
+   $('selection').textContent='未选择。';$('actions').innerHTML='<button id="saveBtn">保存</button><button id="loadBtn">读取存档</button>';$('saveBtn').onclick=()=>{save();log('已保存。')};$('loadBtn').onclick=load
+ }
+ const playerHeroes=state.units.filter(u=>u.owner==='player'&&u.kind==='hero'&&u.hp>0);$('heroesBox').innerHTML=playerHeroes.length?playerHeroes.map(u=>`<div class="heroLine"><div><b>${heroDef(u).name}</b> <span class="pill">${heroDef(u).role}</span><div class="muted">HP ${Math.round(u.hp)}/${maxHP(u)} · 神器 ${(u.artifacts||[]).length}/3${u.partnerId?` · ${pokemon[u.partnerId].name}`:''}</div></div><button class="smallBtn selHero" data-id="${u.id}">选择</button></div>`).join(''):'<div class="muted">尚未招募英雄。选择城市后可招募。</div>';
+ document.querySelectorAll('.selHero').forEach(b=>b.onclick=()=>{selected={kind:'unit',id:+b.dataset.id};updateUI();draw()});
+ $('pokemonBox').innerHTML=state.captured.length?state.captured.map(x=>{const p=pokemon[x.pokemonId];return`<div class="pokeLine"><div><b>${p.name}</b> ${'★'.repeat(p.rarity)}<div class="muted">${p.bonus}${x.partnerOf?' · 已绑定':''}</div></div>${su?.kind==='hero'&&!x.partnerOf?`<button class="smallBtn assignPoke" data-uid="${x.uid}">绑定</button>`:''}</div>`}).join(''):'<div class="muted">尚未捕获精灵。地图上会持续刷新。</div>';
+ document.querySelectorAll('.assignPoke').forEach(b=>b.onclick=()=>assignPokemon(b.dataset.uid));
+ $('artifactsBox').innerHTML=state.inventory.length?state.inventory.map((id,i)=>`<div class="heroLine"><div><b>${artifacts[id].name}</b><div class="muted">${artifacts[id].desc}</div></div>${su?.kind==='hero'?`<button class="smallBtn equipArt" data-i="${i}">装备</button>`:''}</div>`).join(''):'<div class="muted">仓库为空。选择城市开启神器宝箱。</div>';
+ document.querySelectorAll('.equipArt').forEach(b=>b.onclick=()=>equipArtifact(+b.dataset.i));
+ $('techBox').innerHTML=Object.entries(techs).map(([id,x])=>`<button class="${state.currentTech===id?'gold':''}" data-tech="${id}" ${state.researched.includes(id)?'disabled':''} style="width:100%;margin:3px 0;text-align:left">${state.researched.includes(id)?'✓ ':''}${x.name} · ${x.cost}🔬<br><span class="muted">${x.desc}</span></button>`).join('');
+ document.querySelectorAll('[data-tech]').forEach(b=>b.onclick=()=>setResearch(b.dataset.tech));const cur=state.currentTech?techs[state.currentTech]:null;$('techProgress').textContent=cur?`当前：${cur.name} ${Math.floor(state.scienceBank)}/${cur.cost}`:'全部关键科技完成'
+}
+function shade(hex,amt){
+ const n=parseInt(hex.slice(1),16),r=Math.max(0,Math.min(255,(n>>16)+amt)),g=Math.max(0,Math.min(255,((n>>8)&255)+amt)),b=Math.max(0,Math.min(255,(n&255)+amt));
+ return '#'+(b|g<<8|r<<16).toString(16).padStart(6,'0')
+}
+function drawTerrainTile(t){
+ const b=baseCenter(t.q,t.r),lift=tileLift(t),c={x:b.x,y:b.y-lift},d=terrain[t.type],top=hexPts(c.x,c.y,R+1.2);
+ if(lift){
+   const base=hexPts(b.x,b.y,R+1.2),faces=[[0,1],[1,2],[2,3],[3,4]];
+   faces.forEach((e,i)=>{
+     ctx.beginPath();ctx.moveTo(top[e[0]].x,top[e[0]].y);ctx.lineTo(top[e[1]].x,top[e[1]].y);ctx.lineTo(base[e[1]].x,base[e[1]].y);ctx.lineTo(base[e[0]].x,base[e[0]].y);ctx.closePath();
+     ctx.fillStyle=shade(d.c,-28-i*5);ctx.fill()
+   })
+ }
+ const gr=ctx.createLinearGradient(c.x,c.y-R*YS,c.x,c.y+R*YS);
+ gr.addColorStop(0,shade(d.c,18));gr.addColorStop(.55,d.c);gr.addColorStop(1,shade(d.c,-14));
+ pathPts(top);ctx.fillStyle=gr;ctx.fill();
+ // Soft organic texture removes the "solid color hex" look.
+ for(let i=0;i<4;i++){
+   const n=seeded(t.q*97+t.r*131+state.seed+i*19),ang=seeded(t.q*13+t.r*29+i)*Math.PI*2;
+   const rx=(n*.45+.12)*R*Math.cos(ang),ry=(n*.35+.08)*R*YS*Math.sin(ang);
+   ctx.beginPath();ctx.ellipse(c.x+rx,c.y+ry,R*(.18+n*.14),R*YS*(.10+n*.09),ang,0,Math.PI*2);
+   ctx.fillStyle=i%2?'#ffffff0a':'#0000000a';ctx.fill()
+ }
+ if(t.type==='water'){
+   ctx.strokeStyle='#bdefff20';ctx.lineWidth=1.1;
+   for(let i=0;i<2;i++){const yy=c.y-5+i*9,xx=c.x-12+seeded(t.q*33+t.r*7+i)*8;ctx.beginPath();ctx.moveTo(xx,yy);ctx.quadraticCurveTo(c.x,yy-3,xx+24,yy);ctx.stroke()}
+ }
+ if(t.type==='forest')drawForest(t,c);
+ if(t.type==='hills')drawHills(t,c);
+ if(t.type==='mountain')drawMountain(t,c);
+ if(t.type==='desert')drawDunes(t,c);
+}
+function drawForest(t,c){
+ const count=4+Math.floor(seeded(t.q*43+t.r*61+state.seed)*3);
+ for(let i=0;i<count;i++){
+   const a=seeded(t.q*83+t.r*47+i*17+state.seed)*Math.PI*2,rad=seeded(t.q*19+t.r*31+i*7)*17;
+   const x=c.x+Math.cos(a)*rad,y=c.y+Math.sin(a)*rad*YS+2;
+   ctx.fillStyle='#1d3d2d88';ctx.beginPath();ctx.ellipse(x,y+7,6,3,0,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle=i%2?'#24543b':'#2f6443';ctx.beginPath();ctx.moveTo(x,y-13);ctx.lineTo(x-7,y+5);ctx.lineTo(x+7,y+5);ctx.closePath();ctx.fill();
+   ctx.fillStyle='#3e7950';ctx.beginPath();ctx.moveTo(x,y-7);ctx.lineTo(x-6,y+8);ctx.lineTo(x+6,y+8);ctx.closePath();ctx.fill()
+ }
+}
+function drawHills(t,c){
+ ctx.strokeStyle='#5d523b88';ctx.lineWidth=2;
+ for(let i=0;i<2;i++){const x=c.x-13+i*13,y=c.y+5-i*4;ctx.beginPath();ctx.moveTo(x-9,y+4);ctx.quadraticCurveTo(x,y-8,x+10,y+3);ctx.stroke()}
+}
+function drawMountain(t,c){
+ const peaks=[[-9,5,18],[8,3,21],[0,-5,25]];
+ peaks.forEach((p,i)=>{
+   const x=c.x+p[0],y=c.y+p[1],h=p[2];
+   ctx.fillStyle=i===2?'#696d68':'#74766f';ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x-12,y+9);ctx.lineTo(x+12,y+9);ctx.closePath();ctx.fill();
+   ctx.fillStyle='#4f5552';ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+12,y+9);ctx.lineTo(x+2,y-1);ctx.closePath();ctx.fill();
+   ctx.fillStyle='#e7ebe3dd';ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x-4,y-h+7);ctx.lineTo(x,y-h+5);ctx.lineTo(x+5,y-h+8);ctx.closePath();ctx.fill()
+ })
+}
+function drawDunes(t,c){
+ ctx.strokeStyle='#e7c98855';ctx.lineWidth=1.4;
+ for(let i=0;i<3;i++){const y=c.y-7+i*7;ctx.beginPath();ctx.moveTo(c.x-15,y);ctx.quadraticCurveTo(c.x-5,y-5,c.x+4,y);ctx.quadraticCurveTo(c.x+11,y+4,c.x+17,y);ctx.stroke()}
+}
+function drawCoasts(){
+ ctx.lineCap='round';
+ for(const t of state.map){
+   if(t.type==='water')continue;
+   neigh(t.q,t.r).forEach(([q,r],i)=>{const n=tile(q,r);if(n?.type==='water'){const e=edgePts(t,i,true);ctx.strokeStyle='#e6d8a69a';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(e[0].x,e[0].y);ctx.lineTo(e[1].x,e[1].y);ctx.stroke();ctx.strokeStyle='#ffffff55';ctx.lineWidth=1.2;ctx.stroke()}})
+ }
+}
+function buildRiverPaths(){
+ const highs=state.map.filter(t=>t.type==='mountain'||t.type==='hills').sort((a,b)=>seeded(a.q*41+a.r*73+state.seed)-seeded(b.q*41+b.r*73+state.seed));
+ const paths=[];
+ for(let k=0;k<Math.min(3,highs.length);k++){
+   let cur=highs[(k*7)%highs.length],seen=new Set(),path=[cur];
+   for(let step=0;step<12;step++){
+     const ns=neigh(cur.q,cur.r).map(([q,r])=>tile(q,r)).filter(Boolean).filter(x=>!seen.has(x.q+','+x.r));
+     if(!ns.length)break;
+     ns.sort((a,b)=>{
+       const wa=(a.type==='water'?-3:(a.height||.5))+seeded(a.q*17+a.r*23+k)*.08;
+       const wb=(b.type==='water'?-3:(b.height||.5))+seeded(b.q*17+b.r*23+k)*.08;return wa-wb
+     });
+     seen.add(cur.q+','+cur.r);cur=ns[0];path.push(cur);if(cur.type==='water')break
+   }
+   if(path.length>3)paths.push(path)
+ }
+ return paths
+}
+function drawRivers(){
+ for(const path of buildRiverPaths()){
+   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#16384a88';ctx.lineWidth=6;ctx.beginPath();
+   path.forEach((t,i)=>{const c=center(t.q,t.r);i?ctx.lineTo(c.x,c.y+6):ctx.moveTo(c.x,c.y+6)});ctx.stroke();
+   ctx.strokeStyle='#61b9d4cc';ctx.lineWidth=3;ctx.stroke()
+ }
+}
+function drawRoads(){
+ const own=['player','ai'];
+ for(const owner of own){
+   const cs=state.cities.filter(c=>c.owner===owner);if(cs.length<2)continue;
+   ctx.setLineDash([4,4]);ctx.strokeStyle=owner==='player'?'#d8bd7c88':'#a76b6b88';ctx.lineWidth=2.2;
+   for(let i=1;i<cs.length;i++){const a=center(cs[i-1].q,cs[i-1].r),b=center(cs[i].q,cs[i].r);ctx.beginPath();ctx.moveTo(a.x,a.y+8);ctx.quadraticCurveTo((a.x+b.x)/2,(a.y+b.y)/2+18,b.x,b.y+8);ctx.stroke()}
+   ctx.setLineDash([])
+ }
+}
+function drawCity(cty){
+ const c=center(cty.q,cty.r),player=cty.owner==='player';
+ ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(c.x,c.y+14,24,7,0,0,Math.PI*2);ctx.fill();
+ const walls=player?'#cfb56d':'#9e7168',roof=player?'#4f8fa8':'#9e4d55';
+ ctx.fillStyle=walls;ctx.fillRect(c.x-17,c.y-3,34,15);ctx.fillStyle=shade(walls,-20);ctx.fillRect(c.x-20,c.y+9,40,5);
+ for(let i=-1;i<=1;i++){ctx.fillStyle='#e7d39a';ctx.fillRect(c.x+i*11-4,c.y-11-(i===0?5:0),8,14);ctx.fillStyle=roof;ctx.beginPath();ctx.moveTo(c.x+i*11-6,c.y-11-(i===0?5:0));ctx.lineTo(c.x+i*11,c.y-18-(i===0?5:0));ctx.lineTo(c.x+i*11+6,c.y-11-(i===0?5:0));ctx.closePath();ctx.fill()}
+ ctx.strokeStyle=player?'#79ddff':'#ff7777';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(c.x+19,c.y-20);ctx.lineTo(c.x+19,c.y+6);ctx.stroke();ctx.fillStyle=player?'#65cce8':'#ef6a72';ctx.beginPath();ctx.moveTo(c.x+20,c.y-20);ctx.lineTo(c.x+34,c.y-16);ctx.lineTo(c.x+20,c.y-11);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText(cty.capital?'★ '+cty.name:cty.name,c.x,c.y+28)
+}
+function drawWild(wld){
+ const c=center(wld.q,wld.r),p=pokemon[wld.pokemonId];ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(c.x,c.y+10,12,4,0,0,Math.PI*2);ctx.fill();
+ const glow=ctx.createRadialGradient(c.x,c.y-4,1,c.x,c.y-4,17);glow.addColorStop(0,'#ffffffcc');glow.addColorStop(1,'#ffffff00');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(c.x,c.y-4,17,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#f7f7f2';ctx.beginPath();ctx.arc(c.x,c.y-5,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d94b57';ctx.beginPath();ctx.arc(c.x,c.y-5,9,Math.PI,0);ctx.fill();ctx.strokeStyle='#25272a';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(c.x-9,c.y-5);ctx.lineTo(c.x+9,c.y-5);ctx.stroke();
+ ctx.fillStyle='#fff';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(p.name,c.x,c.y+20)
+}
+function drawUnit(u){
+ const c=center(u.q,u.r),hero=u.kind==='hero',player=u.owner==='player',base=player?(hero?'#d9b34f':'#5bbbd3'):'#d65d64';
+ ctx.fillStyle='#00000066';ctx.beginPath();ctx.ellipse(c.x,c.y+13,13,5,0,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=base;ctx.beginPath();ctx.ellipse(c.x,c.y+8,12,5,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f5e7b755';ctx.stroke();
+ if(hero){ctx.fillStyle='#e9d28a';ctx.beginPath();ctx.arc(c.x,c.y-3,6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#263645';ctx.fillRect(c.x-5,c.y+3,10,9);ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.fillText(heroDef(u).name.slice(0,2),c.x,c.y+22)}
+ else if(u.kind==='settler'){ctx.fillStyle='#e2d0a0';ctx.fillRect(c.x-8,c.y-4,16,10);ctx.strokeStyle='#27313a';ctx.beginPath();ctx.arc(c.x-7,c.y+7,4,0,Math.PI*2);ctx.arc(c.x+7,c.y+7,4,0,Math.PI*2);ctx.stroke()}
+ else{ctx.fillStyle='#d9e1e5';ctx.beginPath();ctx.moveTo(c.x,c.y-10);ctx.lineTo(c.x-7,c.y);ctx.lineTo(c.x,c.y+8);ctx.lineTo(c.x+7,c.y);ctx.closePath();ctx.fill()}
+}
+function drawSelectionOverlay(){
+ if(!selected)return;let o=null;if(selected.kind==='unit')o=state.units.find(x=>x.id===selected.id);if(selected.kind==='city')o=state.cities.find(x=>x.id===selected.id);if(selected.kind==='wild')o=state.wild.find(x=>x.id===selected.id);if(selected.kind==='tile')o=selected;if(!o)return;
+ const c=center(o.q,o.r);poly(c.x,c.y,R-1);ctx.fillStyle='#ffe38d18';ctx.fill();ctx.strokeStyle='#ffe38ddd';ctx.lineWidth=2.4;ctx.stroke();
+ if(selected.kind==='unit'){const u=o;for(const [q,r] of neigh(u.q,u.r)){const t=tile(q,r);if(t&&terrain[t.type].move<=u.move){const nc=center(q,r);poly(nc.x,nc.y,R-4);ctx.fillStyle='#6ed8e513';ctx.fill();ctx.strokeStyle='#6ed8e555';ctx.lineWidth=1;ctx.stroke()}}}
+}
+function draw(){
+ if(!state)return;const w=canvas.clientWidth,h=canvas.clientHeight;canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+ const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#18374a');bg.addColorStop(1,'#07131d');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+ const mapW=R*SQ*(COLS+(ROWS-1)/2)+R*2,mapH=R*1.5*YS*(ROWS-1)+R*2*YS+38;ox=Math.max(44,(w-mapW)/2+R);oy=Math.max(58,(h-mapH)/2+R*YS+20);
+ // Broad ocean body behind the terrain.
+ ctx.fillStyle='#2c718c';ctx.beginPath();ctx.roundRect(Math.max(5,ox-R*1.3),Math.max(10,oy-R),Math.min(w-10,mapW),Math.min(h-20,mapH+35),26);ctx.fill();
+ const ordered=[...state.map].sort((a,b)=>(a.r*100+a.q)-(b.r*100+b.q));
+ ordered.forEach(drawTerrainTile);drawCoasts();drawRivers();drawRoads();
+ state.cities.filter(c=>c.hp>0).sort((a,b)=>center(a.q,a.r).y-center(b.q,b.r).y).forEach(drawCity);
+ state.wild.filter(x=>x.hp>0).sort((a,b)=>center(a.q,a.r).y-center(b.q,b.r).y).forEach(drawWild);
+ state.units.filter(x=>x.hp>0).sort((a,b)=>center(a.q,a.r).y-center(b.q,b.r).y).forEach(drawUnit);
+ for(const t of state.map){if(!t.res||t.type==='water')continue;const c=center(t.q,t.r);ctx.font='14px sans-serif';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.fillText(t.res==='小麦'?'🌾':t.res==='石材'?'🪨':t.res==='铁'?'⛓':'🦌',c.x+16,c.y+10)}
+ drawSelectionOverlay();
+ const vg=ctx.createRadialGradient(w*.5,h*.45,Math.min(w,h)*.25,w*.5,h*.45,Math.max(w,h)*.72);vg.addColorStop(.45,'#0000');vg.addColorStop(1,'#0009');ctx.fillStyle=vg;ctx.fillRect(0,0,w,h)
+}
+canvas.addEventListener('click',clickMap);$('endTurn').onclick=endTurn;$('startBtn').onclick=()=>newGame(chosenNation);
+document.querySelectorAll('[data-nation]').forEach(x=>x.onclick=()=>{document.querySelectorAll('[data-nation]').forEach(y=>y.classList.remove('sel'));x.classList.add('sel');chosenNation=x.dataset.nation});
+window.addEventListener('resize',draw);
+})();
+</script>
+</body>
+</html>

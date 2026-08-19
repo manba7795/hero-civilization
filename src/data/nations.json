@@ -1,0 +1,26 @@
+[
+  {
+    "id": "astral_republic",
+    "name": "星穹共和国",
+    "fixedLeaderId": "selerus",
+    "bonus": {
+      "sciencePerCity": 1
+    }
+  },
+  {
+    "id": "forge_empire",
+    "name": "赤炉帝国",
+    "fixedLeaderId": "elaine",
+    "bonus": {
+      "productionPerCity": 1
+    }
+  },
+  {
+    "id": "verdant_union",
+    "name": "森海同盟",
+    "fixedLeaderId": "miya",
+    "bonus": {
+      "foodPerCity": 1
+    }
+  }
+]
