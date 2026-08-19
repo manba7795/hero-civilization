@@ -1,11 +1,16 @@
 import type { CityState, GameState, ProductionId, UnitState, YieldBundle } from "../state/types";
 import { HEX_DIRECTIONS, hexDistance } from "../map/Hex";
 import nations from "../../data/nations.json";
+import { BuildingSystem } from "./BuildingSystem";
 
 const PRODUCTION_COST: Record<ProductionId, number> = { warrior: 28, settler: 46 };
 
 export class CitySystem {
-  constructor(private state: GameState) {}
+  private buildingSystem: BuildingSystem;
+
+  constructor(private state: GameState) {
+    this.buildingSystem = new BuildingSystem();
+  }
 
   canFoundCity(settler: UnitState): boolean {
     if (settler.type !== "settler") return false;
@@ -26,7 +31,8 @@ export class CitySystem {
       hp: 120,
       food: 0,
       production: 0,
-      productionQueue: ["warrior"]
+      productionQueue: ["warrior"],
+      buildings: []
     };
     this.state.cities.push(city);
     this.state.units = this.state.units.filter(u => u.id !== settler.id);
@@ -42,6 +48,10 @@ export class CitySystem {
 
   productionCost(item?: ProductionId): number {
     return item ? PRODUCTION_COST[item] : 0;
+  }
+
+  build(city: CityState, buildingId: string): boolean {
+    return this.buildingSystem.build(city, buildingId);
   }
 
   getYield(city: CityState): YieldBundle {
@@ -60,6 +70,11 @@ export class CitySystem {
       if (tile.feature === "forest") out.production += 1;
       if (tile.resource === "wheat") out.food += 1;
       if (tile.resource === "iron") out.production += 1;
+    }
+
+    const buildingYield = this.buildingSystem.getYield(city);
+    for (const key of Object.keys(buildingYield) as (keyof YieldBundle)[]) {
+      out[key] += buildingYield[key] ?? 0;
     }
 
     if (city.owner === "player") {
