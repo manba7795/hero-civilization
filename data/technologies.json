@@ -1,0 +1,14 @@
+[
+  {
+    "id": "bronze_working",
+    "name": "青铜冶炼",
+    "cost": 40,
+    "unlocks": ["mine", "warrior_upgrade"]
+  },
+  {
+    "id": "nature_studies",
+    "name": "自然研究",
+    "cost": 35,
+    "unlocks": ["rare_pokemon", "habitat_scan"]
+  }
+]
