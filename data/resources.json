@@ -1,0 +1,7 @@
+[
+  {"id":"wheat","name":"小麦","type":"bonus","food":2},
+  {"id":"iron","name":"铁","type":"strategic","production":2},
+  {"id":"horse","name":"马","type":"strategic","production":1},
+  {"id":"crystal","name":"元素水晶","type":"luxury","science":2},
+  {"id":"ancient_core","name":"远古核心","type":"special","science":3}
+]
